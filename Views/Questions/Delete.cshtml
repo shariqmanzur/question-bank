@@ -1,0 +1,46 @@
+﻿@model QuestionBank.Models.Question
+@{
+    ViewData["Title"] = "Delete Question";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="text-danger"><i class="bi bi-trash"></i> @ViewData["Title"]</h2>
+    </div>
+
+    <div class="card shadow p-4 mb-4">
+        <h4 class="text-primary">Question Details</h4>
+        <dl class="row">
+            <dt class="col-sm-3">Question Text</dt>
+            <dd class="col-sm-9">@Model.QuestionText</dd>
+
+            <dt class="col-sm-3">Question Type</dt>
+            <dd class="col-sm-9">@Model.QuestionType</dd>
+
+            @if (Model.QuestionType == QuestionBank.Models.QuestionType.Image && !string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <dt class="col-sm-3">Question Image</dt>
+                <dd class="col-sm-9">
+                    <img src="@Model.ImagePath" alt="Question Image" style="max-width: 300px;" class="img-thumbnail" />
+                </dd>
+            }
+        </dl>
+    </div>
+
+    <div class="alert alert-warning mt-4">
+        <h5><i class="bi bi-exclamation-triangle-fill"></i> Are you sure you want to delete this question?</h5>
+        <p>This action cannot be undo.</p>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </form>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle"></i> Back
+        </a>
+    </div>
+</div>

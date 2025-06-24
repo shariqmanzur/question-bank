@@ -1,0 +1,288 @@
+﻿@model QuestionBank.ViewModels.PaperMakingViewModel 
+@using QuestionBank.Models
+
+@{
+    Layout = null;
+
+    // Group questions by type
+    var bcqQuestions = Model.AvailableQuestions
+                            .Where(q => q.QuestionType == QuestionType.BCQ)
+                            .ToList();
+    var saqQuestions = Model.AvailableQuestions
+                            .Where(q => q.QuestionType == QuestionType.SAQ)
+                            .ToList();
+    var imgQuestions = Model.AvailableQuestions
+                            .Where(q => q.QuestionType == QuestionType.Image)
+                            .ToList();
+
+    // Separate counters so each section starts at 1
+    int bcqNumber = 1;
+    int saqNumber = 1;
+    int imgNumber = 1;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@Model.PaperTitle</title>
+
+    <style>
+
+        /* Add math image styles */
+        .math-img {
+            vertical-align: middle;
+        }
+
+        .math-display {
+            display: block;
+            margin: 12px auto;
+            max-width: 90%;
+        }
+
+        /* ==== RESET & BASE ==== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: "Times New Roman", serif;
+            font-size: 11pt;
+            color: #333;
+            line-height: 1.5;
+            background-color: #FFF;
+        }
+
+        /* By default, allow images to scale but do not center */
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            margin: 4px 0 0 0;
+        }
+
+        /* Center only the header logo */
+        header img {
+            display: block;
+            margin: 0 auto 8px auto;
+            height: 80px;
+        }
+
+        h3, h4 {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ==== HEADER ==== */
+        header {
+            text-align: center;
+            padding: 12px 0;
+            border-bottom: 3px solid #003366;
+            margin-bottom: 20px;
+        }
+        .paper-title {
+            font-family: Georgia, serif;
+            font-size: 18pt;
+            font-weight: bold;
+            color: #003366;
+            margin-top: 6px;
+            margin-bottom: 4px;
+        }
+
+        /* ==== META-DATA TABLE ==== */
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 10.5pt;
+        }
+        .meta-table td {
+            padding: 6px 8px;
+            vertical-align: top;
+            border: 1px solid #DDD;
+        }
+        .meta-table tr:nth-child(odd) {
+            background-color: #FAFAFA;
+        }
+        .meta-table .label {
+            width: 20%;
+            font-weight: bold;
+            color: #003366;
+            text-align: right;
+            padding-right: 12px;
+        }
+        .meta-table .value {
+            width: 30%;
+        }
+        .meta-table .instructions-cell {
+            padding: 8px;
+            font-style: italic;
+            color: #333;
+        }
+
+        /* ==== MAIN CONTENT ==== */
+        main {
+            margin: 0 20px 30px 20px;
+        }
+        .section-title {
+            font-family: Georgia, serif;
+            font-size: 14.5pt;
+            font-weight: bold;
+            color: #003366;
+            border-bottom: 1px solid #666;
+            padding-bottom: 6px;
+            margin: 28px 0 14px;
+        }
+        .question {
+            margin-bottom: 12px;
+        }
+        .question h4 {
+            font-size: 12.5pt;
+            font-weight: normal;
+            color: #222;
+            margin-bottom: 4px;
+        }
+
+        /* MCQ options: increased left margin */
+        .question ol {
+            margin-top: 4px;
+            margin-left: 48px;
+        }
+        .question ol li {
+            margin-bottom: 2px;
+        }
+
+        /* Horizontal separator between SAQ and Image sections */
+        hr.section-separator {
+            border: none;
+            border-top: 1px solid #666;
+            margin: 24px 0;
+        }
+
+        /* ==== FOOTER (visible in HTML preview only) ==== */
+        footer {
+            text-align: right;
+            font-size: 8pt;
+            color: #666;
+            border-top: 1px solid #CCC;
+            padding-top: 6px;
+            margin: 0 20px 20px 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <img src="~/img/ilma-logo.png" alt="University Logo" />
+        <div class="paper-title">@Model.PaperTitle</div>
+    </header>
+
+    <!-- META-DATA TABLE -->
+    <table class="meta-table">
+        <tr>
+            <td class="label">Campus</td>
+            <td class="value">@Model.CampusName</td>
+            <td class="label">Department</td>
+            <td class="value">@Model.Department</td>
+        </tr>
+        <tr>
+            <td class="label">Course</td>
+            <td class="value">@Model.CourseName (@Model.CourseCode)</td>
+            <td class="label">Semester</td>
+            <td class="value">@Model.Semester</td>
+        </tr>
+        <tr>
+            <td class="label">Exam Date</td>
+            <td class="value">@Model.ExamDate.ToString("dddd, MMMM dd, yyyy")</td>
+            <td class="label">Duration</td>
+            <td class="value">@Model.Duration</td>
+        </tr>
+        <tr>
+            <td class="label">Total Marks</td>
+            <td class="value">@Model.TotalMarks</td>
+            <td class="label">Generated On</td>
+            <td class="value">@DateTime.UtcNow.ToString("dddd, MMMM dd, yyyy")</td>
+        </tr>
+        @if (!string.IsNullOrWhiteSpace(Model.Instructions))
+        {
+            <tr>
+                <td class="label">Instructions</td>
+                <td class="instructions-cell" colspan="3">@Model.Instructions</td>
+            </tr>
+        }
+    </table>
+
+    <main>
+        @* — BEST-CHOICE QUESTIONS (MCQs) *@
+        @if (bcqQuestions.Any())
+        {
+            <div class="bcq-section">
+                <h3 class="section-title">
+                    Best-Choice Questions (@bcqQuestions.Count())
+                </h3>
+                @foreach (var q in bcqQuestions)
+                {
+                    <div class="question">
+                        <h4>@(bcqNumber). @Html.Raw(q.QuestionText)</h4>
+                        <ol type="A">
+                            @foreach (var ans in q.BCQAnswers.OrderBy(a => a.Id))
+                            {
+                                <li>@Html.Raw(ans.AnswerText)</li>
+                            }
+                        </ol>
+                    </div>
+                    bcqNumber++;
+                }
+            </div>
+            @if (saqQuestions.Any() || imgQuestions.Any())
+            {
+                <hr class="section-separator" />
+            }
+        }
+
+        @* — SHORT-ANSWER QUESTIONS *@
+        @if (saqQuestions.Any())
+        {
+            <h3 class="section-title">
+                Short-Answer Questions (@saqQuestions.Count())
+            </h3>
+            @foreach (var q in saqQuestions)
+            {
+                <div class="question">
+                    <h4>@(saqNumber). @Html.Raw(q.QuestionText)</h4>
+                </div>
+                saqNumber++;
+            }
+            @if (imgQuestions.Any())
+            {
+                <hr class="section-separator" />
+            }
+        }
+
+        @* — IMAGE-BASED QUESTIONS *@
+        @if (imgQuestions.Any())
+        {
+            <h3 class="section-title">
+                Image-Based Questions (@imgQuestions.Count())
+            </h3>
+            @foreach (var q in imgQuestions)
+            {
+                <div class="question">
+                    <h4>@(imgNumber). @Html.Raw(q.QuestionText)</h4>
+                    @if (!string.IsNullOrEmpty(q.ImagePath))
+                    {
+                        <img src="@Url.Content(q.ImagePath)" width="200" alt="Question Image" />
+                    }
+                </div>
+                imgNumber++;
+            }
+        }
+    </main>
+
+    <!-- FOOTER (HTML Preview Only) -->
+    <footer>
+        Generated On: @DateTime.UtcNow.ToString("dddd, MMMM dd, yyyy")
+    </footer>
+</body>
+</html>

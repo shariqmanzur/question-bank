@@ -1,0 +1,40 @@
+﻿@model QuestionBank.Models.CompetencyLevel
+@{
+    ViewData["Title"] = "Edit Competency Level";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-pencil"></i> @ViewData["Title"]</h2>
+    </div>
+    <div class="card shadow p-4 mb-4">
+        <form asp-action="Edit" method="post" novalidate>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="Level" class="form-label">Competency Level</label>
+                <input asp-for="Level" class="form-control" placeholder="Enter competency level" autocomplete="off" />
+                <span asp-validation-for="Level" class="invalid-feedback"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Description</label>
+                <textarea asp-for="Description" class="form-control" placeholder="Enter description" rows="3"></textarea>
+                <span asp-validation-for="Description" class="invalid-feedback"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save Changes
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left-circle"></i> Back
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Javascript/_ClientSideValidation")
+}

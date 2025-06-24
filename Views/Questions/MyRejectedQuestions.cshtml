@@ -1,0 +1,98 @@
+﻿@model List<QuestionBank.Models.Question>
+@using QuestionBank.Models
+
+@{
+    ViewData["Title"] = "My Rejected Questions";
+}
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-x-circle"></i> @ViewData["Title"]</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle"></i> Back to List
+        </a>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="card shadow p-4 pb-3 pt-2 mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover dataTableStyled">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">S. No.</th>
+                        <th>Question</th>
+                        <th>Rejection Comments</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                @{
+                    var serial = 1;
+                }
+                <tbody>
+                    @foreach (var question in Model)
+                    {
+                        <tr>
+                            <td class="text-center">@serial</td>
+                            <td title="@question.QuestionText">
+                                @(question.QuestionText.Length > 50
+                                    ? question.QuestionText.Substring(0, 50) + "..."
+                                    : question.QuestionText)
+                            </td>
+                            <td>
+                                @if (question.QuestionReviews != null && question.QuestionReviews.Any())
+                                {
+                                    <ul class="list-group list-group-flush">
+                                        @foreach (var review in question.QuestionReviews)
+                                        {
+                                            <li class="list-group-item py-1">
+                                                <span>
+                                                    <strong>@review.Comment</strong><br />
+                                                    @{
+                                                        var names = (ViewData["ReviewerNames"] as Dictionary<string, string>) ?? new();
+                                                        var name = names.ContainsKey(review.CreatedBy) ? names[review.CreatedBy] : "Unknown";
+                                                    }
+                                                    <i class="text-muted">by @name on @review.CreatedAt.ToString("g")</i>
+                                                </span>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">No comments</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="Edit" asp-route-id="@question.Id"
+                                   class="btn btn-warning btn-sm me-1" title="Edit">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                <form asp-action="ResubmitQuestion" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@question.Id" />
+                                    <button type="submit" class="btn btn-primary btn-sm" title="Resubmit for Review">
+                                        <i class="bi bi-send"></i> Resubmit for Review
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        serial++;
+                    }
+                </tbody>
+            </table>
+        </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-exclamation-circle"></i> No rejected questions available.
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Javascript/_DataTable")
+}

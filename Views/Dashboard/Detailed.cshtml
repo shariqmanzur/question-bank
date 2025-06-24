@@ -1,0 +1,293 @@
+﻿@model QuestionBank.ViewModels.Dashboard.DetailedDashboardViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Dashboard";
+
+    var panels = new[]
+    {
+        new { Title = "Total Questions", Value = Model.TotalQuestions, Icon = "bi-question-circle", Color = "primary" },
+        new { Title = "Accepted Questions", Value = Model.AcceptedQuestions, Icon = "bi-check-circle", Color = "success" },
+        new { Title = "Pending Questions", Value = Model.PendingQuestions, Icon = "bi-hourglass-split", Color = "warning" },
+        new { Title = "Rejected Questions", Value = Model.RejectedQuestions, Icon = "bi-x-circle", Color = "danger" },
+        new { Title = "Reviewed Questions", Value = Model.TotalReviews, Icon = "bi-journal-check", Color = "info" }
+    };
+
+    string FormatTime(double hours)
+    {
+        var ts = TimeSpan.FromHours(hours);
+        var parts = new List<string>();
+        int yrs = ts.Days / 365, mos = (ts.Days % 365) / 30, ds = ts.Days % 30;
+
+        if (yrs > 0) parts.Add($"{yrs} year{(yrs == 1 ? "" : "s")}");
+        if (mos > 0) parts.Add($"{mos} month{(mos == 1 ? "" : "s")}");
+        if (ds > 0) parts.Add($"{ds} day{(ds == 1 ? "" : "s")}");
+        if (ts.Hours > 0) parts.Add($"{ts.Hours} hour{(ts.Hours == 1 ? "" : "s")}");
+        if (ts.Minutes > 0) parts.Add($"{ts.Minutes} minute{(ts.Minutes == 1 ? "" : "s")}");
+        return parts.Any() ? string.Join(" ", parts) : "0 second";
+    }
+}
+<div class="container py-1">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-speedometer2"></i> @ViewData["Title"]</h2>
+        <button id="refreshBtn" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+    </div>
+
+    <!-- Summary Panels -->
+    <div class="row gy-3">
+        @foreach (var panel in panels)
+        {
+            <div class="col-sm-6 col-md-4 col-lg-2">
+                <div class="card shadow-sm h-100 text-center">
+                    <div class="card-body">
+                        <div class="mb-2 fs-1 text-@panel.Color"><i class="bi @panel.Icon"></i></div>
+                        <h6 class="text-muted text-uppercase small">@panel.Title</h6>
+                        <div class="h4 fw-bold">@panel.Value</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Accordion -->
+    <div class="accordion my-4" id="advancedAccordion">
+        <!-- Average Time & Acceptance Ratio -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingMetrics">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMetrics">
+                    Advanced Metrics
+                </button>
+            </h2>
+            <div id="collapseMetrics" class="accordion-collapse collapse show" data-bs-parent="#advancedAccordion">
+                <div class="accordion-body">
+                    <div class="row gy-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header"><strong>Average Review Time</strong></div>
+                                <div class="card-body d-flex justify-content-center align-items-center" style="min-height:150px;">
+                                    <p class="h4 fw-bold">@FormatTime(Model.AverageReviewTime)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header"><strong>Acceptance Ratio</strong></div>
+                                <div class="card-body d-flex justify-content-center align-items-center" style="min-height:250px;">
+                                    <div style="width:250px; height:250px;">
+                                        <canvas id="ratioChart"></canvas>
+                                    </div>
+                                    <p class="h4 fw-bold ms-3">@($"{Model.AcceptanceRatio:P1}")</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Type & Competency -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingTypeLevel">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTypeLevel">
+                    Question Type & Competency Level
+                </button>
+            </h2>
+            <div id="collapseTypeLevel" class="accordion-collapse collapse" data-bs-parent="#advancedAccordion">
+                <div class="accordion-body">
+                    <div class="row gy-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header"><strong>Question Type</strong></div>
+                                <div class="card-body d-flex justify-content-center align-items-center" style="min-height:250px;">
+                                    <canvas id="typeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header"><strong>Competency Level</strong></div>
+                                <div class="card-body d-flex justify-content-center align-items-center" style="min-height:250px;">
+                                    <canvas id="competencyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Themes & Monthly Trends -->
+    <div class="row g-4">
+        <!-- Themes & Topics -->
+        <div class="col-lg-6">
+            <div class="accordion" id="themeAccordion">
+                <h5 class="mb-3"><i class="bi bi-list-ul"></i> Questions by Themes & Topics</h5>
+                @if (Model.Themes?.Any() == true)
+                {
+                    @for (int i = 0; i < Model.Themes.Count; i++)
+                    {
+                        var theme = Model.Themes[i];
+                        var hid = $"headingTheme{i}";
+                        var cid = $"collapseTheme{i}";
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="@hid">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@cid">
+                                    @theme.ThemeName <span class="badge bg-secondary ms-2">@theme.QuestionCount</span>
+                                </button>
+                            </h2>
+                            <div id="@cid" class="accordion-collapse collapse" data-bs-parent="#themeAccordion">
+                                <div class="accordion-body">
+                                    <ul class="list-group">
+                                        @foreach (var topic in theme.Topics)
+                                        {
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                @topic.TopicName
+                                                <span class="badge bg-primary rounded-pill">@topic.QuestionCount</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-center text-muted">No themes/topics available.</p>
+                }
+            </div>
+        </div>
+        <!-- Monthly Trends -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header"><strong>Monthly Trends</strong></div>
+                <div class="card-body">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teacher Analytics -->
+    <div class="card shadow-sm p-4 pb-3 mb-4 mt-4">
+        <div class="card-header"><strong>Teacher Analytics</strong></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover dataTableStyled">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Teacher</th>
+                            <th>Total Questions</th>
+                            <th>Accepted</th>
+                            <th>Pending</th>
+                            <th>Rejected</th>
+                            <th>Reviews</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.TeacherAnalytics)
+                        {
+                            <tr>
+                                <td>@t.TeacherName</td>
+                                <td>@t.TotalQuestions</td>
+                                <td>@t.Accepted</td>
+                                <td>@t.Pending</td>
+                                <td>@t.Rejected</td>
+                                <td>@t.TotalReviews</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+            // Refresh button
+            $('#refreshBtn').click(() => location.reload());
+
+            // Acceptance Ratio Doughnut
+            new Chart(document.getElementById('ratioChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Accepted', 'Pending', 'Rejected'],
+                    datasets: [{
+                        data: [
+        @Model.AcceptedQuestions,
+        @Model.PendingQuestions,
+        @Model.RejectedQuestions
+                        ],
+                        backgroundColor: [
+                            getComputedStyle(document.documentElement).getPropertyValue('--bs-success') || '#198754',
+                            getComputedStyle(document.documentElement).getPropertyValue('--bs-warning') || '#ffc107',
+                            getComputedStyle(document.documentElement).getPropertyValue('--bs-danger')  || '#dc3545'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'left',
+                            labels: { boxWidth: 20, padding: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const value = ctx.parsed;
+                                    const total = ctx.chart._metasets[ctx.datasetIndex].total;
+                                    return `${ctx.label}: ${value} (${(value/total*100).toFixed(1)}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Monthly Trends Line Chart
+            const months = @Html.Raw(Json.Serialize(
+        Model.MonthlyTrends.Select(mt =>
+          CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(mt.Month)
+        )
+    ));
+            const vals = @Html.Raw(Json.Serialize(
+        Model.MonthlyTrends.Select(mt => mt.Count)
+    ));
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'line',
+                data: { labels: months, datasets: [{ label: 'Questions', data: vals, tension: 0.3, fill: true }] },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            // By Question Type Bar Chart
+            new Chart(document.getElementById('typeChart'), {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(Json.Serialize(Model.QuestionTypes.Select(q => q.QuestionType))),
+                    datasets: [{ data: @Html.Raw(Json.Serialize(Model.QuestionTypes.Select(q => q.Count))) }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            // By Competency Level Bar Chart
+            new Chart(document.getElementById('competencyChart'), {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(Json.Serialize(Model.CompetencyLevels.Select(c => c.CompetencyLevel))),
+                    datasets: [{ data: @Html.Raw(Json.Serialize(Model.CompetencyLevels.Select(c => c.Count))) }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+    </script>
+
+    @await Html.PartialAsync("Javascript/_DataTable")
+}

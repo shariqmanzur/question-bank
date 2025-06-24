@@ -1,0 +1,132 @@
+﻿@model QuestionBank.Models.Question
+
+@{
+    ViewData["Title"] = "Create Image-Based Question";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-plus-lg"></i> @ViewData["Title"]</h2>
+    </div>
+
+    <div class="card shadow p-4 mb-4">
+        <form asp-action="CreateImageQuestion" method="post" enctype="multipart/form-data" novalidate>
+            <input type="hidden" asp-for="TopicId" value="@ViewBag.Topic?.Id" />
+
+            <div class="mb-3">
+                <label asp-for="CompetencyLevelId" class="form-label">Competency Level</label>
+                <select asp-for="CompetencyLevelId" class="form-select" required
+                        asp-items="@(new SelectList(ViewBag.CompetencyLevels, "Id", "Level"))">
+                    <option value="">-- Select Competency Level --</option>
+                </select>
+                <span asp-validation-for="CompetencyLevelId" class="invalid-feedback"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="QuestionText" class="form-label">Question Text</label>
+                <textarea asp-for="QuestionText"
+                          class="form-control"
+                          id="question-input"
+                          placeholder="Enter question text (use LaTeX syntax for equation, e.g. $x^2 + y^2 = z^2$)"
+                          required></textarea>
+                <span asp-validation-for="QuestionText" class="invalid-feedback"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Upload Question Image</label>
+                <input asp-for="ImageFile" type="file" class="form-control" id="imageUpload" name="ImageFile"
+                       accept=".jpg,.jpeg,.png,.gif" required />
+                <span asp-validation-for="ImageFile" class="invalid-feedback"></span>
+
+                <div class="mt-2">
+                    <img id="imagePreview" class="d-none img-thumbnail clickable-img" style="max-width:200px; cursor:pointer;" title="Click to Preview" />
+                </div>
+            </div>
+
+            <!-- Question Preview -->
+            <div class="mb-3" id="question-preview-container" style="display: none;">
+                <label class="form-label">Question Preview:</label>
+                <div id="question-preview" class="p-3 border" style="min-height: 50px;"></div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ShortAnswer" class="form-label">Answer Text</label>
+                <textarea asp-for="ShortAnswer"
+                          class="form-control"
+                          id="answer-input"
+                          placeholder="Enter answer text (use LaTeX syntax for equation if needed)"
+                          required></textarea>
+                <span asp-validation-for="ShortAnswer" class="invalid-feedback"></span>
+            </div>
+
+            <!-- Answer Preview -->
+            <div class="mb-3" id="answer-preview-container" style="display: none;">
+                <label class="form-label">Answer Preview:</label>
+                <div id="answer-preview" class="p-3 border" style="min-height: 50px;"></div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Create Question
+                </button>
+                <a asp-action="Create" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left-circle"></i> Back
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Image Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Full-size Image" class="img-fluid" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Javascript/_ClientSideValidation")
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+
+            // Image upload validation + preview
+            const uploadEl = document.getElementById("imageUpload");
+            const previewEl = document.getElementById("imagePreview");
+            uploadEl.addEventListener("change", function (e) {
+                const file = e.target.files[0];
+                const allowed = ["image/jpeg", "image/png", "image/gif"];
+                const maxSize = 500 * 1024; // 500 KB
+
+                if (file && allowed.includes(file.type) && file.size <= maxSize) {
+                    const reader = new FileReader();
+                    reader.onload = function (evt) {
+                        previewEl.src = evt.target.result;
+                        previewEl.classList.remove("d-none");
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Invalid File', text: 'Only JPEG, PNG, GIF under 500 KB are allowed.' });
+                    e.target.value = "";
+                    previewEl.classList.add("d-none");
+                }
+            });
+
+            // Lightbox click handler
+            document.body.addEventListener('click', function (e) {
+                if (e.target.classList.contains('clickable-img')) {
+                    const src = e.target.getAttribute('src');
+                    document.getElementById('modalImage').src = src;
+                    new bootstrap.Modal(document.getElementById('imageModal')).show();
+                }
+            });
+        });
+    </script>
+}

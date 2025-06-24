@@ -1,0 +1,120 @@
+﻿@model IEnumerable<QuestionBank.Models.Question>
+
+@{
+    ViewData["Title"] = "Questions";
+}
+
+<div class="container py-1">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-question-circle"></i> @ViewData["Title"]</h2>
+        @{
+            var isAdmin = User.IsInRole("Admin");
+            var isTeacher = User.IsInRole("Teacher");
+        }
+        <div class="d-flex justify-content-end align-items-center">
+            <a asp-action="Create" class="btn btn-primary me-2">
+                <i class="bi bi-plus-lg"></i> Create Question
+            </a>
+            @if (isAdmin)
+            {
+                <a asp-action="Review" class="btn btn-secondary">
+                    <i class="bi bi-hourglass-split"></i> Review Questions
+                </a>
+            }
+            else if (isTeacher)
+            {
+                <a asp-action="MyRejectedQuestions" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> My Rejected Questions
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (Model?.Any() == true)
+    {
+        <div class="card shadow p-4 pb-3 pt-2 mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover dataTableStyled">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th>Question</th>
+                            <th>Theme</th>
+                            <th>Topic</th>
+                            <th class="text-center">Competency Level</th>
+                            <th class="text-center">Type</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Review Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    @{
+                        var serial = 1;
+                    }
+                    <tbody>
+                        @foreach (var question in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@serial</td>
+                                <td>
+                                    <span title="@question.QuestionText">
+                                        @(question.QuestionText.Length > 50 ? question.QuestionText.Substring(0, 50) + "..." : question.QuestionText)
+                                    </span>
+                                </td>
+                                <td>@question.Topic?.Theme?.Name</td>
+                                <td>@question.Topic?.Name</td>
+                                <td class="text-center">@question.CompetencyLevel?.Level</td>
+                                <td class="text-center">@question.QuestionType</td>
+                                <td class="text-center">
+                                    <form asp-action="ToggleStatus" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@question.Id" />
+                                        <button type="button" class="btn btn-sm @(question.IsActive ? "btn-primary" : "btn-secondary") toggle-status"
+                                                data-id="@question.Id" data-action="@Url.Action("ToggleStatus")">
+                                            @(question.IsActive ? "Enabled" : "Disabled")
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-center">
+                                    @{
+                                        var badgeClass = question.Status switch
+                                        {
+                                            ReviewStatus.Pending => "badge bg-warning text-dark",
+                                            ReviewStatus.Accepted => "badge bg-success",
+                                            ReviewStatus.Rejected => "badge bg-danger",
+                                            _ => "badge bg-secondary"
+                                        };
+                                    }
+                                    <span class="@badgeClass">@question.Status</span>
+                                </td>
+                                <td class="text-center">
+                                    <a asp-action="Details" asp-route-id="@question.Id" class="btn btn-info btn-sm">
+                                        <i class="bi bi-eye"></i> Details
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@question.Id" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@question.Id" class="btn btn-danger btn-sm">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            serial++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-exclamation-circle"></i> No questions available.
+        </div>
+    }
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Javascript/_StatusToggle")
+    @await Html.PartialAsync("Javascript/_DataTable")
+}

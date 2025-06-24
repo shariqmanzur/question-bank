@@ -1,0 +1,160 @@
+﻿@model QuestionBank.Models.Question
+@using QuestionBank.Models
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Question Details";
+}
+
+<div class="container">
+    <!-- Question Details -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-eye"></i> @ViewData["Title"]</h2>
+    </div>
+
+    <div class="card shadow p-4 mb-4">
+        <h4 class="text-primary">Question Information</h4>
+        <dl class="row">
+            <dt class="col-sm-3">Question Text</dt>
+            <dd class="col-sm-9">@Model.QuestionText</dd>
+
+            <dt class="col-sm-3">Question Type</dt>
+            <dd class="col-sm-9"><span class="badge bg-secondary">@Model.QuestionType</span></dd>
+
+            <dt class="col-sm-3">Topic</dt>
+            <dd class="col-sm-9">@Model.Topic?.Name</dd>
+
+            <dt class="col-sm-3">Theme</dt>
+            <dd class="col-sm-9">@Model.Topic?.Theme?.Name</dd>
+
+            <dt class="col-sm-3">Competency Level</dt>
+            <dd class="col-sm-9"><span class="badge bg-success">@Model.CompetencyLevel?.Level</span></dd>
+
+            @if (Model.QuestionType == QuestionType.Image)
+            {
+                <dt class="col-sm-3">Question Image</dt>
+                <dd class="col-sm-9">
+                    <img src="@Model.ImagePath" alt="Question Image" class="img-fluid img-thumbnail" style="max-width: 300px;" />
+                </dd>
+                <dt class="col-sm-3">Answer</dt>
+                <dd class="col-sm-9">@Model.ShortAnswer</dd>
+            }
+            else if (Model.QuestionType == QuestionType.SAQ)
+            {
+                <dt class="col-sm-3">Answer</dt>
+                <dd class="col-sm-9">@Model.ShortAnswer</dd>
+            }
+            else if (Model.QuestionType == QuestionType.BCQ)
+            {
+                <dt class="col-sm-3">Answers</dt>
+                <dd class="col-sm-9">
+                    <ul class="list-group">
+                        @foreach (var answer in Model.BCQAnswers)
+                        {
+                            <li class="list-group-item @(answer.IsCorrect ? "list-group-item-success" : "")">
+                                @answer.AnswerText
+                                @if (answer.IsCorrect)
+                                {
+                                    <strong>(Correct)</strong>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </dd>
+            }
+        </dl>
+    </div>
+
+    <!-- Review Comments Section (if any) -->
+    @if (Model.QuestionReviews != null && Model.QuestionReviews.Any())
+    {
+        <div class="card shadow p-4 mt-4">
+            <h4 class="text-info"><i class="bi bi-chat-left-text"></i> Review Comments</h4>
+            <ul class="list-group list-group-flush">
+                @foreach (var review in Model.QuestionReviews)
+                {
+                    <li class="list-group-item py-1">
+                        <span>
+                            <strong>@review.Comment</strong><br />
+                            @{
+                                var names = (ViewData["ReviewerNames"] as Dictionary<string, string>) ?? new();
+                                var name = names.ContainsKey(review.CreatedBy) ? names[review.CreatedBy] : "Unknown";
+                            }
+                            <i class="text-muted">by @name on @review.CreatedAt.ToString("g")</i>
+                        </span>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    <!-- Review Actions Section -->
+    @if (User.IsInRole("Admin") && Model.Status == ReviewStatus.Pending)
+    {
+        <!-- Admin Review Options -->
+        <div class="card shadow p-4 mt-4">
+            <h4 class="text-info"><i class="bi bi-clipboard-check"></i> Review Options</h4>
+            <div class="d-flex">
+                <form asp-action="ApproveQuestion" method="post" class="me-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-success btn-sm" title="Approve">
+                        <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                </form>
+                <div class="flex-fill">
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#rejectModal" title="Reject">
+                        <i class="bi bi-x-circle"></i> Reject
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Reject Modal -->
+        <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form asp-action="RejectQuestion" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="rejectModalLabel">Reject Question</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <div class="mb-3">
+                                <label for="rejectionComment" class="form-label">Rejection Comment</label>
+                                <textarea name="comment" class="form-control" id="rejectionComment" placeholder="Enter rejection comment" required></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Submit Rejection</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+    else if (User.IsInRole("Teacher") && Model.Status == ReviewStatus.Rejected && Model.CreatedBy == User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier))
+    {
+        <!-- Teacher Resubmit Option -->
+        <div class="card shadow p-4 mt-4">
+            <h4 class="text-info"><i class="bi bi-pencil-square"></i> Resubmit Question</h4>
+            <form asp-action="ResubmitQuestion" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-send"></i> Resubmit for Review
+                </button>
+            </form>
+        </div>
+    }
+
+    <div class="mt-4 d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle"></i> Back
+        </a>
+    </div>
+</div>

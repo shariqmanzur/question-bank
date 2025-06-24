@@ -1,0 +1,34 @@
+﻿@model QuestionBank.Models.Theme
+@{
+    ViewData["Title"] = "Edit Theme";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-pencil"></i> @ViewData["Title"]</h2>
+    </div>
+    <div class="card shadow p-4 mb-4">
+        <form asp-action="Edit" method="post" novalidate>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Theme Name</label>
+                <input asp-for="Name" class="form-control" placeholder="Enter theme name" autocomplete="off" />
+                <span asp-validation-for="Name" class="invalid-feedback"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Save Changes
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left-circle"></i> Back
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Javascript/_ClientSideValidation")
+}

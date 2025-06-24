@@ -1,0 +1,600 @@
+﻿@model QuestionBank.ViewModels.PaperMakingViewModel
+
+@{
+    ViewData["Title"] = "Create Paper";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-plus-lg"></i> @ViewData["Title"]</h2>
+    </div>
+    <div class="card shadow p-4 mb-4">
+        <!-- Filter Form -->
+        <form asp-action="Filter" method="post" class="mb-4">
+            @Html.AntiForgeryToken()
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label asp-for="SelectedThemeId" class="form-label">Theme</label>
+                    <select asp-for="SelectedThemeId"
+                            asp-items="@(new SelectList(Model.Themes, "Id", "Name", Model.SelectedThemeId))"
+                            class="form-select" id="SelectedThemeId">
+                        <option value="">-- All Themes --</option>
+                    </select>
+                    <span asp-validation-for="SelectedThemeId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="SelectedTopicId" class="form-label">Topic</label>
+                    <select asp-for="SelectedTopicId"
+                            asp-items="@(new SelectList(Model.AvailableTopics, "Id", "Name", Model.SelectedTopicId))"
+                            class="form-select" id="SelectedTopicId">
+                        <option value="">-- All Topics --</option>
+                    </select>
+                    <span asp-validation-for="SelectedTopicId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="SelectedCompetencyLevelId" class="form-label">Competency Level</label>
+                    <select asp-for="SelectedCompetencyLevelId"
+                            asp-items="@(new SelectList(Model.CompetencyLevels, "Id", "Level", Model.SelectedCompetencyLevelId))"
+                            class="form-select" id="SelectedCompetencyLevelId">
+                        <option value="">-- All Levels --</option>
+                    </select>
+                    <span asp-validation-for="SelectedCompetencyLevelId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="SelectedTeacherId" class="form-label">Teacher</label>
+                    <select asp-for="SelectedTeacherId"
+                            asp-items="Model.Teachers"
+                            class="form-select" id="SelectedTeacherId">
+                        <option value="">-- All Teachers --</option>
+                    </select>
+                    <span asp-validation-for="SelectedTeacherId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="StartDate" class="form-label">Start Date</label>
+                    <input asp-for="StartDate"
+                           class="form-control"
+                           type="date"
+                           id="SD" />
+                    <span asp-validation-for="StartDate" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label asp-for="EndDate" class="form-label">End Date</label>
+                    <input asp-for="EndDate"
+                           class="form-control"
+                           type="date"
+                           id="ED" />
+                    <span asp-validation-for="EndDate" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <!-- Question Types & Counts (Left Column) -->
+                <div class="col-12 col-lg-6">
+                    <label class="form-label">Select Question Types &amp; Counts</label>
+                    <div id="questionTypeContainer" class="border rounded p-4">
+                        @foreach (var type in Model.QuestionTypes)
+                        {
+                            var isChecked = Model.SelectedQuestionTypesWithCount.ContainsKey(type.Value);
+                            var countValue = isChecked
+                            ? Model.SelectedQuestionTypesWithCount[type.Value]
+                            : 1;
+
+                            <div class="row gx-2 gy-1 align-items-center mb-2">
+                                <div class="col-6 col-sm-5">
+                                    <div class="form-check">
+                                        <input class="form-check-input questionTypeCheckbox"
+                                               type="checkbox"
+                                               id="chk_@type.Value"
+                                               value="@type.Value"
+                                        @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label" for="chk_@type.Value">
+                                            @type.Text
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <input type="number"
+                                           class="form-control questionTypeCount"
+                                           name="SelectedQuestionTypesWithCount[@type.Value]"
+                                           min="1"
+                                           value="@countValue"
+                                    @(isChecked ? "" : "disabled") />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Filters & Actions (Right Column) -->
+                <div class="col-12 col-lg-6 d-flex flex-column">
+                    <!-- Top: Saved Filters & New Filter Title -->
+                    <div>
+                        <div class="mb-3">
+                            <label asp-for="PaperFilterId" class="form-label">Saved Filters</label>
+                            <div class="input-group">
+                                <select asp-for="PaperFilterId"
+                                        asp-items="Model.PaperFilters"
+                                        class="form-select"
+                                        id="savedFilterDropdown">
+                                    <option value="">-- Load a Saved Filter --</option>
+                                </select>
+                                <button class="btn btn-outline-danger"
+                                        type="button"
+                                        id="deleteFilterBtn"
+                                        title="Delete the selected filter"
+                                        disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NewFilterTitle" class="form-label">Save This Filter As</label>
+                            <input asp-for="NewFilterTitle"
+                                   class="form-control"
+                                   placeholder="Enter new filter title…" />
+                        </div>
+                    </div>
+
+                    <!-- Spacer pushes buttons to the bottom -->
+                    <div class="mt-auto row">
+                        <div class="mt-auto row">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Filter Questions
+                                    </button>
+                                    <a asp-action="Create" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> Clear Filter
+                                    </a>
+                                </div>
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left-circle"></i> Back
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+        </form>
+
+        <form asp-action="DeleteFilter" method="post" id="deleteFilterForm" style="display:none;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="paperFilterId" id="filterIdToDelete" />
+        </form>
+
+        @if (Model.AvailableQuestions != null && Model.AvailableQuestions.Any())
+        {
+            <!-- Paper creation form omitted for brevity -->
+            <form asp-action="Paper" method="post" id="paperForm">
+                @Html.AntiForgeryToken()
+
+                <!-- Preserve the loaded filter on POST -->
+                <input type="hidden" asp-for="PaperFilterId" />
+
+                <input type="hidden" asp-for="SelectedThemeId" />
+                <input type="hidden" asp-for="SelectedTopicId" />
+                <input type="hidden" asp-for="SelectedCompetencyLevelId" />
+                <input type="hidden" asp-for="SelectedTeacherId" />
+                <input type="hidden" asp-for="StartDate" />
+                <input type="hidden" asp-for="EndDate" />
+
+                @* And for each question‐type/count pair… *@
+                @foreach (var kv in Model.SelectedQuestionTypesWithCount)
+                {
+                    <input type="hidden"
+                           name="SelectedQuestionTypesWithCount[@kv.Key]"
+                           value="@kv.Value" />
+                }
+
+                <!-- PAPER METADATA -->
+                <div class="mb-4">
+                    <h4>Paper Details</h4>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="PaperTitle" class="form-label"></label>
+                            <input asp-for="PaperTitle" class="form-control" />
+                            <span asp-validation-for="PaperTitle" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="UniversityName" class="form-label"></label>
+                            <input asp-for="UniversityName" class="form-control" readonly />
+                            <span asp-validation-for="UniversityName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="CampusName" class="form-label"></label>
+                            <input asp-for="CampusName" class="form-control" />
+                            <span asp-validation-for="CampusName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Department" class="form-label"></label>
+                            <input asp-for="Department" class="form-control" />
+                            <span asp-validation-for="Department" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="CourseName" class="form-label"></label>
+                            <input asp-for="CourseName" class="form-control" />
+                            <span asp-validation-for="CourseName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="CourseCode" class="form-label"></label>
+                            <input asp-for="CourseCode" class="form-control" />
+                            <span asp-validation-for="CourseCode" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Semester" class="form-label"></label>
+                            <input asp-for="Semester" class="form-control" />
+                            <span asp-validation-for="Semester" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="ExamDate" class="form-label"></label>
+                            <input asp-for="ExamDate" class="form-control" placeholder="Select date" id="ExamDate" />
+                            <span asp-validation-for="ExamDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Duration" class="form-label"></label>
+                            <select asp-for="Duration" class="form-select">
+                                <option value="">-- Select Duration --</option>
+                                <option value="00:30:00">30 minutes</option>
+                                <option value="01:00:00">1 hour</option>
+                                <option value="01:30:00">1 hour 30 minutes</option>
+                                <option value="02:00:00">2 hours</option>
+                                <option value="02:30:00">2 hours 30 minutes</option>
+                                <option value="03:00:00">3 hours</option>
+                            </select>
+                            <span asp-validation-for="Duration" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="TotalMarks" class="form-label"></label>
+                            <input asp-for="TotalMarks" type="number" class="form-control" />
+                            <span asp-validation-for="TotalMarks" class="text-danger"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Instructions" class="form-label"></label>
+                            <textarea asp-for="Instructions" rows="3" class="form-control"></textarea>
+                            <span asp-validation-for="Instructions" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow-sm p-4 pb-3">
+                    <div class="mb-2">
+                        <label>
+                            <input type="checkbox" id="selectAllCheckbox" class="form-check-input me-2" />
+                            <strong>Select All</strong>
+                        </label>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover dataTableStyled">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center">Select</th>
+                                    <th class="text-center">#</th>
+                                    <th>Question</th>
+                                    <th>Theme</th>
+                                    <th>Topic</th>
+                                    <th class="text-center">Competency Level</th>
+                                    <th class="text-center">Type</th>
+                                    <th>Teacher</th>
+                                </tr>
+                            </thead>
+
+                        @{
+                            var serial = 1;
+                        }
+                        <tbody>
+                            @foreach (var question in Model.AvailableQuestions)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="SelectedQuestionIds" value="@question.Id" class="question-checkbox form-check-input" />
+                                    </td>
+                                    <td class="text-center">@serial</td>
+                                    <td>
+                                        <span title="@question.QuestionText">
+                                            @question.QuestionText
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @question.Topic?.Theme?.Name
+                                    </td>
+                                    <td>
+                                        @question.Topic?.Name
+                                    </td>
+                                    <td class="text-center">@question.CompetencyLevel?.Level</td>
+                                    <td class="text-center">@question.QuestionType</td>
+                                    <td>@(Model.Teachers.FirstOrDefault(t => t.Value == question.CreatedBy)?.Text ?? "Unknown")</td>
+                                </tr>
+                                serial++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                </div>
+                <button type="submit" class="btn btn-success mt-4">
+                    <i class="bi bi-check-circle"></i> Create Paper
+                </button>
+            </form>
+        }
+        else if (Model.FilterApplied)
+        {
+            <div class="alert alert-warning text-center">
+                <i class="bi bi-exclamation-circle"></i> No questions match your current filter.
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Javascript/_ClientSideValidation")
+    @await Html.PartialAsync("Javascript/_DataTable")
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // ———————————————
+            // Theme‑aware SweetAlert Setup
+            // ———————————————
+            const theme      = document.documentElement.getAttribute("data-bs-theme") || "light";
+            const isDark     = theme === "dark";
+            const btnClasses = {
+                primary:   "btn btn-primary",
+                secondary: isDark ? "btn btn-outline-secondary" : "btn btn-secondary",
+                danger:    isDark ? "btn btn-outline-danger"    : "btn btn-danger"
+            };
+            const swalOpts = (overrides = {}) => Object.assign({
+                buttonsStyling: false,
+                background:     isDark ? "#212529" : "#ffffff",
+                color:          isDark ? "#f8f9fa" : "#212529",
+                focusConfirm:   false,
+                allowEnterKey:  false,
+                customClass: {
+                    icon:          "swal2-icon swal2-error swal2-icon-show text-danger",
+                    confirmButton: btnClasses.primary,
+                    cancelButton:  btnClasses.secondary + " ms-2"
+                }
+            }, overrides);
+
+            // ———————————————
+            // Element References
+            // ———————————————
+            const paperForm     = document.getElementById("paperForm");
+            const deleteBtn     = document.getElementById("deleteFilterBtn");
+            const deleteInput   = document.getElementById("filterIdToDelete");
+            const savedDropdown = document.getElementById("savedFilterDropdown");
+            const titleInput    = document.getElementById("NewFilterTitle");
+            const themeSel      = document.getElementById("SelectedThemeId");
+            const topicSel      = document.getElementById("SelectedTopicId");
+            const levelSel      = document.getElementById("SelectedCompetencyLevelId");
+            const teacherSel    = document.getElementById("SelectedTeacherId");
+            const dateFields    = {
+                start: document.querySelector("input[name='StartDate']"),
+                end:   document.querySelector("input[name='EndDate']")
+            };
+            const qTypeCheckboxes = document.querySelectorAll(".questionTypeCheckbox");
+            const requiredFieldIds = [
+                "PaperTitle", "CampusName", "Department", "CourseName",
+                "CourseCode", "Semester", "ExamDate", "Duration", "TotalMarks", "Instructions"
+            ];
+
+            // ———————————————
+            // Live Validation Clear
+            // ———————————————
+            requiredFieldIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                ["input", "change"].forEach(evt => el.addEventListener(evt, () => {
+                    el.classList.remove("is-invalid");
+                    const fb = el.parentElement.querySelector(".invalid-feedback");
+                    if (fb) fb.remove();
+                }));
+            });
+
+            // ———————————————
+            // Load Filter Details
+            // ———————————————
+            async function loadFilter(fid) {
+                const resetFields = () => {
+                    deleteBtn.disabled       = true;
+                    deleteInput.value        = "";
+                    titleInput.value         = "";
+                    titleInput.placeholder   = "Enter new filter title…";
+                    themeSel.value           = "";
+                    levelSel.value           = "";
+                    teacherSel.value         = "";
+                    dateFields.start.value   = "";
+                    dateFields.end.value     = "";
+                    themeSel.dispatchEvent(new Event("change"));
+
+                    qTypeCheckboxes.forEach(cb => {
+                        const cnt = cb.closest(".row").querySelector(".questionTypeCount");
+                        cb.checked = false;
+                        cnt.disabled = true;
+                        cnt.value = 1;
+                    });
+                };
+
+                if (!fid) return resetFields();
+
+                deleteBtn.disabled = false;
+                deleteInput.value  = fid;
+
+                try {
+                    const resp = await fetch(`/Paper/GetFilterDetails?paperFilterId=${fid}`);
+                    const data = await resp.json();
+                    if (!data.success) return;
+
+                    themeSel.value         = data.themeId || "";
+                    themeSel.dispatchEvent(new Event("change"));
+                    setTimeout(() => topicSel.value = data.topicId || "", 200);
+                    levelSel.value         = data.levelId || "";
+                    teacherSel.value       = data.teacherId || "";
+                    dateFields.start.value = data.startDate || "";
+                    dateFields.end.value   = data.endDate   || "";
+                    titleInput.value       = "";
+
+                    qTypeCheckboxes.forEach(cb => {
+                        const cnt = cb.closest(".row").querySelector(".questionTypeCount");
+                        const val = data.counts[cb.value];
+                        cb.checked = !!val;
+                        cnt.disabled = !val;
+                        cnt.value = val || 1;
+                    });
+                } catch {
+                    console.error("Filter load failed");
+                }
+            }
+            savedDropdown?.addEventListener("change", () => loadFilter(savedDropdown.value));
+
+            // ———————————————
+            // Delete Filter Confirmation
+            // ———————————————
+            deleteBtn?.addEventListener("click", e => {
+                e.preventDefault();
+                Swal.fire(swalOpts({
+                    icon:             "warning",
+                    iconColor:        "#f27474",
+                    title:            "Delete Filter?",
+                    text:             "Are you sure you want to delete this saved filter?",
+                    showCancelButton: true,
+                    confirmButtonText:"Yes, delete it",
+                    customClass: {
+                        confirmButton: btnClasses.danger,
+                        cancelButton:  btnClasses.secondary + " ms-2"
+                    }
+                })).then(res => {
+                    if (res.isConfirmed) document.getElementById("deleteFilterForm").submit();
+                });
+            });
+
+            // ———————————————
+            // Paper Form Submit Handler
+            // ———————————————
+            let paperFormAlreadySubmitted = false;
+            paperForm.addEventListener("submit", e => {
+                if (paperFormAlreadySubmitted) return;
+                e.preventDefault();
+
+                const chosenCount = window.selectedQuestionIds.size;
+                if (chosenCount === 0) {
+                    return Swal.fire(swalOpts({
+                        icon:  "error",
+                        title: "Validation Error",
+                        text:  "Please select at least one question."
+                    }));
+                }
+
+                const errors = requiredFieldIds.filter(id => {
+                    const el = document.getElementById(id);
+                    return !el.value.trim();
+                });
+
+                if (errors.length) {
+                    return Swal.fire(swalOpts({
+                        icon:  "error",
+                        title: "Validation Error",
+                        text:  `${errors[0]} is required.`
+                    }));
+                }
+
+                const currentTheme = document.documentElement.getAttribute("data-bs-theme") || "light";
+
+                Swal.fire(swalOpts({
+                  icon:             "question",
+                  title:            "Confirm Paper Creation",
+                  html:             `You are about to create a paper with <strong>${chosenCount}</strong> question${chosenCount > 1 ? "s" : ""}. Continue?`,
+                  showCancelButton: true,
+                  confirmButtonText: "Yes, create it",
+                  cancelButtonText:  "Cancel",
+                  background: currentTheme === "dark" ? "#2c2f33" : "#fff",
+                  color:      currentTheme === "dark" ? "#f0f0f0" : "#000"
+                })).then(res => {
+                  if (!res.isConfirmed) return;
+
+                  // Show loading with themed modal
+                  Swal.fire({
+                    title: "Creating Paper...",
+                    allowOutsideClick: false,
+                    background: currentTheme === "dark" ? "#2c2f33" : "#fff",
+                    color:      currentTheme === "dark" ? "#f0f0f0" : "#000",
+                    didOpen: () => Swal.showLoading()
+                  });
+
+                  // Delay submission to show spinner for UX
+                  setTimeout(() => {
+                    paperTable.$("input.question-checkbox").prop("disabled", true);
+                    $(paperForm).find("input.generated-question-id").remove();
+                    Array.from(window.selectedQuestionIds).forEach(id => {
+                      $("<input>")
+                        .attr({ type: "hidden", name: "SelectedQuestionIds", value: id })
+                        .addClass("generated-question-id")
+                        .appendTo(paperForm);
+                    });
+
+                    paperFormAlreadySubmitted = true;
+                    paperForm.submit();
+                  }, 5000); // increase this value if needed
+                });
+
+            });
+
+            // ———————————————
+            // Dynamic Topics Load
+            // ———————————————
+            themeSel?.addEventListener("change", async () => {
+                topicSel.innerHTML = `<option value="">-- All Topics --</option>`;
+                if (!themeSel.value) return;
+
+                try {
+                    const res = await fetch(`/Paper/GetTopics?themeId=${themeSel.value}`);
+                    const topics = await res.json();
+                    topics.forEach(t => {
+                        const opt = document.createElement("option");
+                        opt.value = t.id;
+                        opt.textContent = t.name;
+                        topicSel.appendChild(opt);
+                    });
+                } catch {
+                    console.error("Failed to load topics");
+                }
+            });
+
+            // ———————————————
+            // Show TempData alerts (optional)
+            // ———————————————
+            const sm = '@TempData["SuccessMessage"]';
+            const em = '@TempData["Error"]';
+            if (sm) {
+                Swal.fire(swalOpts({
+                    icon: "success",
+                    title: "Success!",
+                    text: sm,
+                    confirmButtonText: "OK",
+                    customClass: { confirmButton: btnClasses.danger }
+                }));
+            } else if (em) {
+                Swal.fire(swalOpts({
+                    icon: "error",
+                    title: "Error",
+                    text: em,
+                    confirmButtonText: "OK",
+                    customClass: { confirmButton: btnClasses.danger }
+                }));
+            }
+
+            // ———————————————
+            // Enable/disable count inputs per Q-Type
+            // ———————————————
+            qTypeCheckboxes.forEach(cb => {
+                const cnt = cb.closest(".row").querySelector(".questionTypeCount");
+                cb.addEventListener("change", () => {
+                    cnt.disabled = !cb.checked;
+                    if (cb.checked && (!cnt.value || cnt.value < 1)) cnt.value = 1;
+                });
+            });
+        });
+    </script>
+}

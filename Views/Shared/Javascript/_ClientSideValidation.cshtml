@@ -1,0 +1,37 @@
+﻿<partial name="_ValidationScriptsPartial" />
+@* <script>
+    // Configure jQuery Validation to use Bootstrap classes and feedback
+    $.validator.setDefaults({
+        highlight: function (element) {
+            $(element).addClass('is-invalid').removeClass('is-valid');
+        },
+        unhighlight: function (element) {
+            $(element).removeClass('is-invalid').addClass('is-valid');
+        },
+        errorClass: 'invalid-feedback',
+        errorElement: 'div',
+        errorPlacement: function (error, element) {
+            // Place error feedback after form controls
+            error.insertAfter(element);
+        }
+    });
+</script> *@
+<script>
+    // Configure jQuery Validation to use Bootstrap error classes only
+    $.validator.setDefaults({
+        highlight: function (element) {
+            $(element)
+              .addClass('is-invalid')   // add red border
+              .removeClass('is-valid'); // remove green border if it was there
+        },
+        unhighlight: function (element) {
+            $(element)
+              .removeClass('is-invalid'); // just remove red border, don’t add green
+        },
+        errorClass: 'invalid-feedback',
+        errorElement: 'div',
+        errorPlacement: function (error, element) {
+            error.insertAfter(element);
+        }
+    });
+</script>

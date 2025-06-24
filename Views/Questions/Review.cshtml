@@ -1,0 +1,119 @@
+﻿@model IEnumerable<QuestionBank.Models.Question>
+@using QuestionBank.Models
+
+@{
+    ViewData["Title"] = "Review Questions";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-hourglass-split"></i> @ViewData["Title"]</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left-circle"></i> Back to List
+        </a>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="card shadow p-4 pb-3 pt-2 mb-4">
+            <div class="table-responsive">
+                <table class="table table-hover dataTableStyled">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">S. No.</th>
+                        <th>Question</th>
+                        <th>Topic</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                @{
+                    var serial = 1;
+                }
+                <tbody>
+                    @foreach (var question in Model)
+                    {
+                        <tr>
+                            <td class="text-center">@serial</td>
+                            <td title="@question.QuestionText">
+                                @((question.QuestionText.Length > 50) ? question.QuestionText.Substring(0, 50) + "..." : question.QuestionText)
+                            </td>
+                            <td>@question.Topic?.Name</td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <form asp-action="ApproveQuestion" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@question.Id" />
+                                        <button type="submit" class="btn btn-success btn-sm" title="Approve">
+                                            <i class="bi bi-check-circle"></i> Approve
+                                        </button>
+                                    </form>
+                                    <button type="button"
+                                            class="btn btn-danger btn-sm ms-2 reject-btn"
+                                            data-question-id="@question.Id"
+                                            title="Reject">
+                                        <i class="bi bi-x-circle"></i> Reject
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        serial++;
+                    }
+                </tbody>
+            </table>
+        </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">
+            <i class="bi bi-exclamation-circle"></i> No review questions available.
+        </div>
+    }
+</div>
+
+<!-- Reject Comment Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="RejectQuestion" method="post" id="rejectForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rejectModalLabel">Reject Question</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="rejectQuestionId" />
+                    <div class="mb-3">
+                        <label for="rejectionComment" class="form-label">Rejection Comment</label>
+                        <textarea name="comment" class="form-control" id="rejectionComment" placeholder="Enter rejection comment" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Submit Rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    @await Html.PartialAsync("Javascript/_DataTable")
+
+    <script>
+        $(document).ready(function () {
+            // When a reject button is clicked, open the modal
+            $('.reject-btn').on('click', function () {
+                var questionId = $(this).data('question-id');
+                // Set the hidden field value in the modal form
+                $('#rejectQuestionId').val(questionId);
+                // Clear any previous comment
+                $('#rejectionComment').val('');
+                // Show the modal using Bootstrap's modal plugin
+                var rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+                rejectModal.show();
+            });
+        });
+    </script>
+}

@@ -1,0 +1,160 @@
+﻿@model IEnumerable<QuestionBank.Models.Notification>
+
+@{
+    var unreadCount = Model?.Count(n => !n.IsRead) ?? 0;
+}
+
+<div class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle position-relative" href="#"
+       id="notificationDropdown" role="button"
+       data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-bell fs-5"></i>
+        @if (unreadCount > 0)
+        {
+            <span class="position-absolute top-60 start-80 translate-middle badge rounded-pill bg-danger shadow-sm"
+                  style="font-size:0.7rem;min-width:1.5em;">
+                @unreadCount
+            </span>
+        }
+    </a>
+
+    <form id="notificationForm" method="post">
+        @Html.AntiForgeryToken()
+
+        <ul class="dropdown-menu dropdown-menu-end p-0"
+            aria-labelledby="notificationDropdown"
+            style="min-width:300px; max-height:30rem; overflow-y:auto;">
+            @if (Model?.Any() ?? false)
+            {
+                foreach (var n in Model)
+                {
+                    var url = n.QuestionId.HasValue
+                    ? Url.Action("Details", "Questions", new { id = n.QuestionId.Value })
+                    : "#";
+                    <li class="dropdown-item px-3 py-2 @(n.IsRead ? "read" : "")">
+                        <a href="@url"
+                           class="notification-item text-decoration-none d-block"
+                           data-id="@n.Id"
+                           data-url="@url">
+                            <div class="d-flex justify-content-between">
+                                <small class="timestamp">@n.CreatedAt</small>
+                            </div>
+                            <div class="message mt-1">@n.Message</div>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider my-1" /></li>
+                }
+            }
+            else
+            {
+                <li class="dropdown-item text-center text-muted py-3">
+                    No notifications
+                </li>
+            }
+        </ul>
+    </form>
+</div>
+
+<script defer>
+    document.addEventListener('DOMContentLoaded', function() {
+        // grab the antiforgery token once
+        var tokenInput = document.querySelector('#notificationForm input[name="__RequestVerificationToken"]');
+        var token = tokenInput ? tokenInput.value : '';
+
+        // bind click handlers
+        document.querySelectorAll('.notification-item').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                var id  = this.getAttribute('data-id'),
+                    url = this.getAttribute('data-url');
+
+                // use jQuery (loaded by Layout 2) to POST
+                $.post(
+                    '/Notification/MarkAsRead',
+                    { id: id, __RequestVerificationToken: token },
+                    function(res) {
+                        if (res.success) {
+                            // update badge
+                            var badge = document.querySelector('#notificationDropdown .badge');
+                            if (badge) {
+                                var count = parseInt(badge.textContent, 10) - 1;
+                                if (count <= 0) badge.remove();
+                                else badge.textContent = count;
+                            }
+                            // mark item read
+                            link.closest('li').classList.add('read');
+                            // redirect if needed
+                            if (url && url !== '#') window.location.href = url;
+                        } else {
+                            Swal.fire('Error', 'Could not mark notification as read', 'error');
+                        }
+                    }
+                );
+            });
+        });
+    });
+</script>
+
+<style>
+    /* limit dropdown height so only ~10 items show, scroll the rest */
+    .dropdown-menu {
+        max-height: 30rem;
+        overflow-y: auto;
+    }
+
+    /* default (light) styling */
+    .dropdown-item.read {
+        background-color: #f9f9f9;
+        color: #aaa;
+    }
+
+    .dropdown-item:hover {
+        background-color: #f1f1f1;
+    }
+
+    .timestamp {
+        color: #6c757d;
+        font-size: 0.75rem;
+    }
+
+    .message {
+        font-weight: 600;
+        color: #212529;
+    }
+
+    /* unbold read messages */
+    .dropdown-item.read .message {
+        font-weight: normal !important;
+    }
+
+    /* dark-mode overrides */
+    [data-bs-theme="dark"] .dropdown-menu {
+        background-color: #212529;
+    }
+
+    [data-bs-theme="dark"] .dropdown-item {
+        color: #f8f9fa;
+    }
+
+        [data-bs-theme="dark"] .dropdown-item:hover {
+            background-color: #343a40;
+        }
+
+        [data-bs-theme="dark"] .dropdown-item.read {
+            background-color: #343a40;
+            color: #6c757d;
+        }
+
+    [data-bs-theme="dark"] .timestamp {
+        color: #adb5bd;
+    }
+
+    [data-bs-theme="dark"] .message {
+        color: #f8f9fa;
+    }
+
+    [data-bs-theme="dark"] .dropdown-item.read .message {
+        font-weight: normal !important;
+    }
+</style>

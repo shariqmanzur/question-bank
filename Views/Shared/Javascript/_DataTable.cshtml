@@ -1,0 +1,120 @@
+﻿<script>
+    $(document).ready(function () {
+        window.selectedQuestionIds = new Set();
+
+        window.paperTable = $('.dataTableStyled').DataTable({
+            paging: true,
+            searching: true,
+            ordering: true,
+            info: true,
+            responsive: true,
+            drawCallback: function () {
+                const api = this.api();
+
+                api.rows({ page: 'current' }).nodes().to$().find('input.question-checkbox').each(function () {
+                    $(this).prop('checked', window.selectedQuestionIds.has(this.value));
+                });
+
+                updateSelectAllCheckboxState(api);
+            }
+        });
+
+        $('#selectAllCheckbox').on('change', function () {
+            const isChecked = this.checked;
+            const api = window.paperTable;
+
+            api.rows({ search: 'applied' }).every(function () {
+                const checkbox = $(this.node()).find('input.question-checkbox');
+                if (checkbox.length) {
+                    const val = checkbox.val();
+                    isChecked ? window.selectedQuestionIds.add(val) : window.selectedQuestionIds.delete(val);
+                }
+            });
+
+            api.rows({ page: 'current' }).nodes().to$().find('input.question-checkbox').prop('checked', isChecked);
+            updateSelectAllCheckboxState(api);
+        });
+
+        $('.dataTableStyled').on('change', 'input.question-checkbox', function () {
+            const val = this.value;
+            this.checked ? window.selectedQuestionIds.add(val) : window.selectedQuestionIds.delete(val);
+            updateSelectAllCheckboxState(window.paperTable);
+        });
+
+        function updateSelectAllCheckboxState(api) {
+            const checkboxes = $('input.question-checkbox', api.rows({ search: 'applied' }).nodes());
+            const total = checkboxes.length;
+            let checked = 0;
+
+            checkboxes.each(function () {
+                if (window.selectedQuestionIds.has(this.value)) checked++;
+            });
+
+            const $selectAll = $('#selectAllCheckbox');
+            if (total > 0 && checked === total) {
+                $selectAll.prop({ checked: true, indeterminate: false });
+            } else {
+                // 🔧 Force fully unchecked (no minus state)
+                $selectAll.prop({ checked: false, indeterminate: false });
+            }
+        }
+
+        $('.dataTables_filter input')
+            .addClass('form-control form-control-sm ms-2')
+            .attr('placeholder', 'Search...');
+        $('.dataTables_length select')
+            .addClass('form-select form-select-sm')
+            .css('width', '100px');
+    });
+</script>
+
+<style>
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        margin: 15px;
+    }
+
+    .dataTables_filter label,
+    .dataTables_length label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .dataTable th,
+    .dataTable td {
+        border: 1px solid #dee2e6 !important;
+        vertical-align: middle;
+    }
+
+    table.dataTable {
+        border-collapse: collapse !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        margin: 0 2px;
+        border: none !important;
+    }
+        /* Default (light) current page */
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background-color: #0d6efd !important;
+            color: #fff !important;
+            border: none !important;
+            box-shadow: none;
+        }
+    /* Dark mode */
+    [data-bs-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    [data-bs-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current:focus {
+        background-color: transparent !important;
+        color: var(--bs-primary) !important;
+        border: 1px solid var(--bs-primary) !important;
+        box-shadow: none !important;
+    }
+
+        [data-bs-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background-color: var(--bs-primary) !important;
+            color: #fff !important;
+            border: 1px solid var(--bs-primary) !important;
+        }
+</style>

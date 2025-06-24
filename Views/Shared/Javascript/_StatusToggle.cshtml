@@ -1,0 +1,58 @@
+﻿<script>
+    // ———————————————
+    // Global SweetAlert Theme Setup
+    // ———————————————
+    const theme  = document.documentElement.getAttribute("data-bs-theme") || "light";
+    const isDark = theme === "dark";
+
+    const btnClasses = {
+      success:   isDark ? "btn btn-outline-primary" : "btn btn-primary",
+      secondary: isDark ? "btn btn-outline-secondary" : "btn btn-secondary"
+    };
+
+    function swalOpts(overrides = {}) {
+      return Object.assign({
+        buttonsStyling: false,
+        customClass: {
+          confirmButton: btnClasses.success,
+          cancelButton:  btnClasses.secondary + " ms-2"
+        },
+        background:   isDark ? "#212529" : "#ffffff",
+        color:        isDark ? "#f8f9fa" : "#212529",
+        focusConfirm: false,
+        allowEnterKey:false
+      }, overrides);
+    }
+
+    // ———————————————
+    // jQuery Logic (DOM Ready)
+    // ———————————————
+    $(function () {
+      // 1) Toggle Status
+      $(document).on("click", ".toggle-status", function (e) {
+        e.preventDefault();
+        const button    = $(this);
+        const id        = button.data("id");
+        const actionUrl = button.data("action");
+
+        $.post(actionUrl, { id: id })
+          .done(function (response) {
+            if (response.success) {
+              button
+                .toggleClass("btn-primary btn-secondary")
+                .text(response.isActive ? "Enabled" : "Disabled");
+            }
+          });
+      });
+
+      // 2) SweetAlert from TempData
+      const successMessage = '@TempData["SuccessMessage"]';
+      if (successMessage) {
+        Swal.fire(swalOpts({
+          icon:  "success",
+          title: "Success!",
+          text:  successMessage
+        }));
+      }
+    });
+</script>

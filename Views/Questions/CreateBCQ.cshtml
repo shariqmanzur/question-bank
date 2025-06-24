@@ -1,0 +1,117 @@
+﻿@model QuestionBank.Models.Question
+@{
+    ViewData["Title"] = "Create Best Choice Question";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2><i class="bi bi-plus-lg"></i> Create Best Choice Question</h2>
+    </div>
+    <div class="card shadow p-4 mb-4">
+        <form asp-action="CreateBCQ" method="post" novalidate>
+            <div class="mb-3">
+                <label asp-for="TopicId" class="form-label">Topic</label>
+                <p class="fw-bold">@ViewBag.Topic?.Name</p>
+                <input type="hidden" asp-for="TopicId" value="@ViewBag.Topic?.Id" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CompetencyLevelId" class="form-label">Competency Level</label>
+                <select asp-for="CompetencyLevelId" class="form-select" required
+                        asp-items="@(new SelectList(ViewBag.CompetencyLevels,"Id","Level"))">
+                    <option value="">-- Select Competency Level --</option>
+                </select>
+                <span asp-validation-for="CompetencyLevelId" class="invalid-feedback"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="QuestionText" class="form-label">Question Text</label>
+                <textarea asp-for="QuestionText"
+                          class="form-control"
+                          id="question-input"
+                          placeholder="Enter question text (use LaTeX syntax for equation, e.g. $x^2 + y^2 = z^2$)"
+                          required></textarea>
+                <span asp-validation-for="QuestionText" class="invalid-feedback"></span>
+            </div>
+
+            <!-- Question Preview (hidden by default) -->
+            <div class="mb-3" id="question-preview-container" style="display: none;">
+                <label class="form-label">Question Preview:</label>
+                <div id="question-preview"
+                     class="p-3 border"
+                     style="min-height: 50px;">
+                </div>
+            </div>
+
+            <h4 class="mt-4">Answers</h4>
+            <p class="text-muted">Select the correct answer by clicking the checkmark button.</p>
+
+            @for (int i = 0; i < 4; i++)
+            {
+                <div class="mb-3">
+                    <label class="form-label">Answer @(i + 1)</label>
+                    <div class="input-group">
+                        <!-- 1) Option input now has a unique ID -->
+                        <input type="text"
+                               name="AnswerTexts[@i]"
+                               class="form-control"
+                               id="option-input-@i"
+                               placeholder="Enter answer option (use LaTeX syntax for equation if needed)"
+                               required
+                               data-val="true"
+                               data-val-required="Answer @(i + 1) is required." />
+
+                        <!-- your radio + label unchanged -->
+                        <input type="radio" class="btn-check" name="CorrectAnswerIndex"
+                               id="correctAnswer@(i)" value="@i" required
+                               data-val="true" data-val-required="Please select the correct answer." />
+                        <label class="btn btn-outline-success input-group-text correct-answer-label"
+                               for="correctAnswer@(i)" data-index="@i">
+                            <i class="bi bi-check-lg"></i>
+                        </label>
+                    </div>
+
+                    <!-- 2) Per-option Preview Container -->
+                    <div id="option-preview-container-@i"
+                         class="mb-3"
+                         style="display:none;">
+                        <small class="text-muted form-label">Preview:</small>
+                        <div id="option-preview-@i"
+                             class="p-3 border"
+                             style="min-height: 50px;">
+                        </div>
+                    </div>
+
+                    <span class="invalid-feedback" data-valmsg-for="AnswerTexts[@i]" data-valmsg-replace="true"></span>
+                </div>
+            }
+
+            <!-- 4) Single error placeholder for the radio‐group -->
+            <span class="invalid-feedback"
+                  data-valmsg-for="CorrectAnswerIndex"
+                  data-valmsg-replace="true"></span>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Create Question
+                </button>
+                <a asp-action="Create" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left-circle"></i> Back
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Javascript/_ClientSideValidation")
+
+    <script>
+        $(function() {
+            // BCQ labels
+            $('.correct-answer-label').on('click',function(){
+                $('.correct-answer-label').removeClass('btn-success');$(this).addClass('btn-success');
+            });
+        });
+    </script>
+}

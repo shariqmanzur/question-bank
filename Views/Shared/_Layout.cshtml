@@ -1,0 +1,295 @@
+﻿@* _Layout.cshtml *@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - QuestionBank</title>
+
+    <!-- Bootstrap & Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/QuestionBank.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" />
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+    <!-- Flatpickr Dark Theme (disabled by default) -->
+    <link id="flatpickr-dark-css" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" rel="stylesheet" disabled />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+
+    @await RenderSectionAsync("HeadScripts", required: false)
+
+    <style>
+        .theme-toggle {
+            cursor: pointer;
+        }
+    </style>
+
+</head>
+<body>
+
+    <!-- AJAX calls (e.g. filtering, saving, deleting filters) automatically show the spinner so users know something is happening. -->
+    <div id="ajaxSpinner" class="d-none position-fixed top-0 start-0 w-100 h-100
+     bg-white bg-opacity-75 d-flex justify-content-center align-items-center"
+         style="z-index:1050;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading…</span>
+        </div>
+    </div>
+
+    <header>
+        <nav class="navbar navbar-expand-sm border-bottom shadow-sm mb-3" id="mainNav">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-controller="Dashboard" asp-action="Detailed">QuestionBank</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="#navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    @if (User.Identity?.IsAuthenticated ?? false)
+                    {
+                        <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+                            <li class="nav-item"><a class="nav-link" asp-controller="Dashboard" asp-action="Detailed">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Paper" asp-action="Index">Papers</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Themes" asp-action="Index">Themes</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Topics" asp-action="Index">Topics</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="CompetencyLevels" asp-action="Index">Competency Levels</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Questions" asp-action="Index">Questions</a></li>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-controller="UserManagement" asp-action="Index">User Management</a></li>
+                            }
+                        </ul>
+
+                        <ul class="navbar-nav ms-auto align-items-center">
+                            @await Component.InvokeAsync("Notification")
+                        </ul>
+                    }
+
+                    @* Login/Register Partial stays inside the collapse for mobile *@
+                    @await Html.PartialAsync("_LoginPartial")
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Theme Toggle Button fixed at bottom-right -->
+    <button id="themeToggle" class="btn btn-outline-secondary theme-toggle position-fixed" title="Change theme"
+            style="bottom:1rem; right:1rem; z-index:1050;">
+        <i id="themeIcon" class="bi"></i>
+    </button>
+
+    <footer class="border-top footer text-muted text-center py-2">
+        <div class="container">
+            &copy; @DateTime.Now.Year - QuestionBank - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <!-- JS Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- MathJax v3 (for rendering LaTeX preview) -->
+    <script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+          },
+          svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <!-- Theme Toggle & Button Variant Script -->
+    <script>
+        (() => {
+          const html       = document.documentElement;
+          const toggleBtn  = document.getElementById('themeToggle');
+          const toggleIcon = document.getElementById('themeIcon');
+          const colors     = ["primary","secondary","success","danger","warning","info","light","dark"];
+
+          // Generic class swapper
+          function swap(selector, lightClass, darkClass, theme) {
+            document.querySelectorAll(selector).forEach(el => {
+              if (theme === 'dark' && el.classList.contains(lightClass)) {
+                el.classList.replace(lightClass, darkClass);
+              } else if (theme === 'light' && el.classList.contains(darkClass)) {
+                el.classList.replace(darkClass, lightClass);
+              }
+            });
+          }
+
+          function updateAll(theme) {
+            // Bootstrap theming
+            swap('.navbar', 'navbar-light', 'navbar-dark', theme);
+            swap('.navbar', 'bg-light', 'bg-dark', theme);
+            swap('.card', 'bg-white', 'bg-dark', theme);
+            swap('table', 'table-light', 'table-dark', theme);
+            swap('thead', 'table-light', 'table-dark', theme);
+            document.querySelectorAll('input.form-control, textarea.form-control, select.form-select').forEach(el => {
+              if (theme === 'dark') el.classList.add('bg-dark','text-light');
+              else el.classList.remove('bg-dark','text-light');
+            });
+            swap('.alert', 'alert-light', 'alert-dark', theme);
+            swap('a.nav-link', 'link-dark', 'link-light', theme);
+            swap('.breadcrumb', 'breadcrumb-light', 'breadcrumb-dark', theme);
+            swap('.modal-content', 'bg-white', 'bg-dark', theme);
+            document.querySelectorAll('button.btn, a.btn, input.btn').forEach(btn => {
+              colors.forEach(c => {
+                const normal = `btn-${c}`;
+                const outline = `btn-outline-${c}`;
+                if (theme === 'dark' && btn.classList.contains(normal)) btn.classList.replace(normal, outline);
+                else if (theme === 'light' && btn.classList.contains(outline)) btn.classList.replace(outline, normal);
+              });
+            });
+
+            // Flatpickr theming
+            [examPicker, sdPicker, edPicker].forEach(fp => {
+              if (fp && fp.calendarContainer) {
+                fp.calendarContainer.classList.toggle('flatpickr-dark', theme === 'dark');
+              }
+            });
+          }
+
+          function setTheme(theme) {
+            // Toggle Flatpickr dark CSS based on theme
+            const fpDark = document.getElementById('flatpickr-dark-css');
+            if (fpDark) fpDark.disabled = (theme !== 'dark');
+            html.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+            toggleIcon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+            updateAll(theme);
+          }
+
+          // Initialize Flatpickr instances
+          const examPicker = flatpickr("#ExamDate", { dateFormat: "Y-m-d", defaultDate: "today", minDate: "today" });
+          const sdPicker   = flatpickr("#SD",       { dateFormat: "Y-m-d", defaultDate: "today" });
+          const edPicker   = flatpickr("#ED",       { dateFormat: "Y-m-d", defaultDate: "today" });
+
+          // Initialize theme
+          const savedTheme = localStorage.getItem('theme') || 'light';
+          setTheme(savedTheme);
+
+          // Toggle on button click
+          toggleBtn.addEventListener('click', () => {
+            const newTheme = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+          });
+        })();
+    </script>
+
+    <!-- Tooltip Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          // Grab every element that has a title attribute:
+          var tooltipElements = document.querySelectorAll('[title]');
+          tooltipElements.forEach(function (el) {
+            // Initialize a Bootstrap tooltip on it:
+            new bootstrap.Tooltip(el, {
+              // Use any provided data-bs-placement, or default to top
+              placement: el.getAttribute('data-bs-placement') || 'top',
+              trigger: 'hover focus'
+            });
+          });
+        });
+    </script>
+
+    <!-- Spinner Script -->
+    <script>
+        // Show spinner whenever any AJAX call is in flight
+        $(document).ajaxStart(function () {
+            $('#ajaxSpinner').removeClass('d-none');
+        }).ajaxStop(function () {
+            $('#ajaxSpinner').addClass('d-none');
+        });
+    </script>
+
+    <!-- LIVE PREVIEW for equation + re-apply theme on toggle -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          const equationPattern = /(?:\$\$?[\s\S]+?\$\$?|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/;
+
+          // Swap bg/border classes to match light/dark
+          const applyTheme = container => {
+            if (document.documentElement.getAttribute("data-bs-theme") === "dark") {
+              container.classList.replace("bg-white", "bg-dark");
+              container.classList.replace("border", "border-secondary");
+            } else {
+              container.classList.replace("bg-dark", "bg-white");
+              container.classList.replace("border-secondary", "border");
+            }
+          };
+
+          // Generic preview updater
+          const updatePreview = ({ inputId, containerId, previewId }) => {
+            const inputEl     = document.getElementById(inputId);
+            const containerEl = document.getElementById(containerId);
+            const previewEl   = document.getElementById(previewId);
+            if (!inputEl || !containerEl || !previewEl) return;
+
+            const text        = inputEl.value;
+            const hasEquation = equationPattern.test(text);
+
+            if (hasEquation) {
+              applyTheme(containerEl);
+              containerEl.style.display = "block";
+              previewEl.textContent     = text;
+              MathJax.typesetPromise([previewEl]);
+            } else {
+              containerEl.style.display = "none";
+            }
+          };
+
+          // Build a list of all previewable fields
+          const previewConfig = [
+            // question + answer
+            { inputId: "question-input", containerId: "question-preview-container", previewId: "question-preview" },
+            { inputId: "answer-input",   containerId: "answer-preview-container",   previewId: "answer-preview"   }
+          ];
+
+          // add the 4 MCQ options
+          for (let i = 0; i < 4; i++) {
+            previewConfig.push({
+              inputId:     `option-input-${i}`,
+              containerId: `option-preview-container-${i}`,
+              previewId:   `option-preview-${i}`
+            });
+          }
+
+          // Wire up each preview field
+          previewConfig.forEach(cfg => {
+            const inp = document.getElementById(cfg.inputId);
+            if (!inp) return;           // skip if not on this page
+            // initial render
+            updatePreview(cfg);
+            // update on every keystroke
+            inp.addEventListener("input", () => updatePreview(cfg));
+          });
+
+          // When theme toggles, re-apply theme to all visible preview containers
+          document.getElementById("themeToggle").addEventListener("click", () => {
+            previewConfig.forEach(cfg => {
+              const containerEl = document.getElementById(cfg.containerId);
+              if (containerEl && containerEl.style.display !== "none") {
+                applyTheme(containerEl);
+              }
+            });
+          });
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>
