@@ -11,8 +11,10 @@
             </a>
         </li>
         <li class="nav-item">
-            <form id="logoutForm" class="d-inline" asp-area="Identity" asp-page="/Account/Logout"
-                  asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+            <form id="logoutForm" class="d-inline"
+                  asp-area="Identity"
+                  asp-page="/Account/Logout"
+                  asp-route-returnUrl="/Identity/Account/Login">
                 <button id="logout" type="submit" class="nav-link btn btn-link text-body border-0 px-0">
                     Logout
                 </button>

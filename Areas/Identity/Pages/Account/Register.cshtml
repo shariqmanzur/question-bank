@@ -1,67 +1,153 @@
 ﻿@page
-@model RegisterModel
+@model QuestionBank.Areas.Identity.Pages.Account.RegisterModel
 @{
     ViewData["Title"] = "Register";
 }
 
-<h1>@ViewData["Title"]</h1>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Register</h2>
 
-<div class="row">
-    <div class="col-md-4">
-        <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <h2>Create a new account.</h2>
-            <hr />
-            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label asp-for="Input.Email">Email</label>
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
-            </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.Password">Password</label>
-                <span asp-validation-for="Input.Password" class="text-danger"></span>
-            </div>
-            <div class="form-floating mb-3">
-                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label asp-for="Input.ConfirmPassword">Confirm Password</label>
-                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
-            </div>
-            <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </form>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
-                    <div>
-                        <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
-                        </p>
-                    </div>
-                }
-                else
-                {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
-                                }
-                            </p>
+                    <form id="registerForm" method="post" asp-route-returnUrl="@Model.ReturnUrl">
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Email"
+                                   class="form-control"
+                                   placeholder="Email (optional)"
+                                   autocomplete="email"
+                                   id="Input_Email" />
+                            <label asp-for="Input.Email">Email (optional)</label>
+                            <span asp-validation-for="Input.Email" class="text-danger invalid-feedback"></span>
                         </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.UserName"
+                                   class="form-control"
+                                   placeholder="Username"
+                                   autocomplete="username"
+                                   id="Input_UserName" />
+                            <label asp-for="Input.UserName">Username</label>
+                            <span asp-validation-for="Input.UserName" class="text-danger invalid-feedback"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Password"
+                                   type="password"
+                                   class="form-control"
+                                   placeholder="Password"
+                                   autocomplete="new-password" />
+                            <label asp-for="Input.Password">Password</label>
+                            <span asp-validation-for="Input.Password" class="text-danger invalid-feedback"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.ConfirmPassword"
+                                   type="password"
+                                   class="form-control"
+                                   placeholder="Confirm Password"
+                                   autocomplete="new-password" />
+                            <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+                            <span asp-validation-for="Input.ConfirmPassword" class="text-danger invalid-feedback"></span>
+                        </div>
+
+                        <button id="registerSubmit" type="submit" class="btn btn-primary w-100">Register</button>
                     </form>
-                }
+
+                    <div class="mt-3 text-center">
+                        <a asp-page="./Login"
+                           asp-route-returnUrl="@Model.ReturnUrl">
+                            Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+            {
+                <div class="card mt-4 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <h5 class="mb-3">Or register using</h5>
+                        <form asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                            @foreach (var prov in Model.ExternalLogins!)
+                            {
+                                <button type="submit"
+                                        class="btn btn-outline-primary me-2 mb-2"
+                                        name="provider"
+                                        value="@prov.Name">
+                                    @prov.DisplayName
+                                </button>
+                            }
+                        </form>
+                    </div>
+                </div>
             }
-        </section>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const verifyUrl = {
+          user:  '@Url.Page("/Account/Register", "VerifyUsername", new { area = "Identity" })',
+          email: '@Url.Page("/Account/Register", "VerifyEmail", new { area = "Identity" })'
+        };
+
+        function handleValidation($field, serverOk, serverMsg) {
+          const $fb = $field.closest('.form-floating').find('.invalid-feedback');
+          const clientOk = $field.valid();
+          const finalValid = serverOk && clientOk;
+
+          $field.toggleClass('is-invalid', !finalValid)
+                .toggleClass('is-valid', finalValid);
+
+          if (!finalValid) {
+            // If the client validator failed, let its message stay; otherwise use serverMsg
+            const msg = clientOk ? serverMsg : $fb.text();
+            $fb.text(msg).addClass('d-block');
+          } else {
+            $fb.text('').removeClass('d-block');
+          }
+        }
+
+        // Username
+        $('#Input_UserName').on('blur', function() {
+          const $f = $(this), val = $f.val().trim();
+          if (!val) { handleValidation($f, true, ''); return; }
+          $.get(verifyUrl.user, { userName: val })
+           .done(ok => handleValidation($f, ok, 'Username is already taken.'));
+        });
+
+        // Email
+        $('#Input_Email').on('blur', function() {
+          const $f = $(this), val = $f.val().trim();
+          if (!val) { handleValidation($f, true, ''); return; }
+          $.get(verifyUrl.email, { email: val })
+           .done(ok => handleValidation($f, ok, 'Email is already in use.'));
+        });
+
+        // Password
+        $('#Input_Password').on('blur', function() {
+          const $f = $(this);
+          // no server check, so serverOk = true
+          handleValidation($f, true, '');
+        });
+
+        // Confirm Password
+        $('#Input_ConfirmPassword').on('blur', function() {
+          const $f = $(this);
+          handleValidation($f, true, '');
+        });
+
+        // On form submit, re-validate all inputs to clear stale ticks
+        $('#registerForm').on('submit', function() {
+          $(this).find('input').each(function() {
+            $(this).valid();
+          });
+        });
+    </script>
 }

@@ -1,10 +1,21 @@
 ﻿@page
 @model AccessDeniedModel
 @{
-    ViewData["Title"] = "Access denied";
+    ViewData["Title"] = "Access Denied";
 }
 
-<header>
-    <h1 class="text-danger">@ViewData["Title"]</h1>
-    <p class="text-danger">You do not have access to this resource.</p>
-</header>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4 text-center">
+                    <h2 class="mb-4 text-danger">@ViewData["Title"]</h2>
+                    <p class="text-danger">
+                        You do not have permission to access this resource.
+                    </p>
+                    <a asp-page="./Login" class="btn btn-primary w-100 mt-3">Return to Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

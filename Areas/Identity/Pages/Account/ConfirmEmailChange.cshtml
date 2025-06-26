@@ -1,8 +1,19 @@
 ﻿@page
 @model ConfirmEmailChangeModel
 @{
-    ViewData["Title"] = "Confirm email change";
+    ViewData["Title"] = "Confirm Email Change";
 }
 
-<h1>@ViewData["Title"]</h1>
-<partial name="_StatusMessage" model="Model.StatusMessage" />
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4 text-center">
+                    <h2 class="mb-4">@ViewData["Title"]</h2>
+                    <partial name="_StatusMessage" model="Model.StatusMessage" />
+                    <a asp-page="./Login" class="btn btn-primary w-100 mt-3">Continue to Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

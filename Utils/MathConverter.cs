@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
@@ -27,9 +26,10 @@ namespace QuestionBank.Utils
             if (_cache.TryGetValue(tex, out string uri))
                 return uri;
 
-            // Fetch from codecogs
-            var encoded = WebUtility.UrlEncode(tex);
+            // Properly percent-encode using EscapeDataString (spaces -> %20, + -> %2B)
+            var encoded = Uri.EscapeDataString(tex);
             var url = $"https://latex.codecogs.com/svg.latex?{encoded}";
+
             var response = await _http.GetAsync(url);
             response.EnsureSuccessStatusCode();
 

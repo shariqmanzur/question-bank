@@ -1,83 +1,154 @@
 ﻿@page
-@model LoginModel
-
+@model QuestionBank.Areas.Identity.Pages.Account.LoginModel
 @{
     ViewData["Title"] = "Log in";
 }
 
-<h1>@ViewData["Title"]</h1>
-<div class="row">
-    <div class="col-md-4">
-        <section>
-            <form id="account" method="post">
-                <h2>Use a local account to log in.</h2>
-                <hr />
-                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                    <label asp-for="Input.Email" class="form-label">Email</label>
-                    <span asp-validation-for="Input.Email" class="text-danger"></span>
-                </div>
-                <div class="form-floating mb-3">
-                    <input asp-for="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
-                    <label asp-for="Input.Password" class="form-label">Password</label>
-                    <span asp-validation-for="Input.Password" class="text-danger"></span>
-                </div>
-                <div class="checkbox mb-3">
-                    <label asp-for="Input.RememberMe" class="form-label">
-                        <input class="form-check-input" asp-for="Input.RememberMe" />
-                        @Html.DisplayNameFor(m => m.Input.RememberMe)
-                    </label>
-                </div>
-                <div>
-                    <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
-                </div>
-                <div>
-                    <p>
-                        <a id="forgot-password" asp-page="./ForgotPassword">Forgot your password?</a>
-                    </p>
-                    <p>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">Resend email confirmation</a>
-                    </p>
-                </div>
-            </form>
-        </section>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to log in.</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
-                    <div>
-                        <p>
-                            There are no external authentication services configured. See this <a href="https://go.microsoft.com/fwlink/?LinkID=532715">article
-                            about setting up this ASP.NET application to support logging in via external services</a>.
-                        </p>
-                    </div>
-                }
-                else
-                {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
-                                }
-                            </p>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Log in</h2>
+
+                    <form method="post">
+                        <!-- Email/Username with inline error -->
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.EmailOrUsername"
+                                   class="form-control @(Model.IsEmailInvalid ? "is-invalid" : "")"
+                                   placeholder="Username or Email"
+                                   autocomplete="username" />
+                            <label asp-for="Input.EmailOrUsername">Username or Email</label>
+                            <span asp-validation-for="Input.EmailOrUsername"
+                                  class="invalid-feedback"></span>
                         </div>
+
+                        <!-- Password with inline error -->
+                        <div class="form-floating mb-3">
+                            <input asp-for="Input.Password"
+                                   type="password"
+                                   class="form-control @(Model.IsPasswordInvalid ? "is-invalid" : "")"
+                                   placeholder="Password"
+                                   autocomplete="current-password" />
+                            <label asp-for="Input.Password">Password</label>
+                            <span asp-validation-for="Input.Password"
+                                  class="invalid-feedback"></span>
+                        </div>
+
+                        <!-- Remember me -->
+                        <div class="form-check mb-3">
+                            <input asp-for="Input.RememberMe"
+                                   class="form-check-input" />
+                            <label asp-for="Input.RememberMe"
+                                   class="form-check-label">
+                                @Html.DisplayNameFor(m => m.Input.RememberMe)
+                            </label>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            Log in
+                        </button>
                     </form>
-                }
+
+                    <div class="mt-3 text-center">
+                        <a asp-page="./Register"
+                           asp-route-returnUrl="@Model.ReturnUrl">
+                            Register
+                        </a><br />
+                        <a asp-page="./ForgotPassword">Forgot password?</a><br />
+                        <a asp-page="./ResendEmailConfirmation">
+                            Resend confirmation
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+            {
+                <div class="card mt-4 shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <h5 class="mb-3">Or log in with</h5>
+                        <form method="post"
+                              asp-page="./ExternalLogin"
+                              asp-route-returnUrl="@Model.ReturnUrl">
+                            @foreach (var provider in Model.ExternalLogins)
+                            {
+                                <button type="submit"
+                                        class="btn btn-outline-primary me-2 mb-2"
+                                        name="provider"
+                                        value="@provider.Name">
+                                    @provider.DisplayName
+                                </button>
+                            }
+                        </form>
+                    </div>
+                </div>
             }
-        </section>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Razor will resolve these URLs including the handler names
+        const verifyUrl = {
+          user:  '@Url.Page("/Account/Login", null, new { handler = "VerifyUser" }, protocol: Request.Scheme)',
+          pass:  '@Url.Page("/Account/Login", null, new { handler = "VerifyPassword" }, protocol: Request.Scheme)'
+        };
+
+        // same helper you already have
+        function handleValidation($field, serverOk, serverMsg) {
+          const $fb = $field.closest('.form-floating').find('.invalid-feedback');
+          const clientOk = $field.valid();
+          const finalValid = serverOk && clientOk;
+
+          $field.toggleClass('is-invalid', !finalValid)
+                .toggleClass('is-valid', finalValid);
+
+          if (!finalValid) {
+            // if client side failed, show its message; otherwise show serverMsg
+            const msg = clientOk ? serverMsg : $fb.text();
+            $fb.text(msg).addClass('d-block');
+          } else {
+            $fb.text('').removeClass('d-block');
+          }
+        }
+
+        // 1) USERNAME/EMAIL existence check
+        $('#Input_EmailOrUsername').on('blur', function() {
+          const $f = $(this), val = $f.val().trim();
+          if (!val) { handleValidation($f, true, ''); return; }
+
+          $.get(verifyUrl.user, { emailOrUsername: val })
+           .done(ok => handleValidation($f, ok, 'User not found.'));
+        });
+
+        // 2) PASSWORD correctness check
+        $('#Input_Password').on('blur', function() {
+          const $f = $(this), pwd = $f.val();
+          const userVal = $('#Input_EmailOrUsername').val().trim();
+
+          // only attempt password check if we have a username/email
+          if (!userVal || !pwd) {
+            handleValidation($f, true, '');
+            return;
+          }
+
+          $.get(verifyUrl.pass, {
+              emailOrUsername: userVal,
+              password: pwd
+            })
+            .done(ok => handleValidation($f, ok, 'Incorrect password.'));
+        });
+
+        // on form submit, force re-validate all fields to clear any stale ticks
+        $('form').on('submit', function() {
+          $(this).find('input').each(function() {
+            $(this).valid();
+          });
+        });
+    </script>
 }

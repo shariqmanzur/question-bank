@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -29,11 +30,35 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         .ConfigureWarnings(w => w.Throw(RelationalEventId.MultipleCollectionIncludeWarning))
 );
 
-// Identity with Roles
+// Identity with Roles, plus cookie config for “Remember Me”
 builder.Services
-    .AddDefaultIdentity<IdentityUser>(opts => opts.SignIn.RequireConfirmedAccount = false)
+    .AddDefaultIdentity<IdentityUser>(opts =>
+    {
+        opts.SignIn.RequireConfirmedAccount = false;
+        // you can tweak password strength, lockout, etc. here if you like
+    })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Configure the application cookie so that “Remember Me” (persistent cookies) works:
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    // If the user checks “Remember me?”, this is how long the cookie lives
+    options.ExpireTimeSpan = TimeSpan.FromDays(14);
+
+    // If you leave off “Remember me”, it'll still re-issue the cookie on each request
+    options.SlidingExpiration = true;
+
+    // Paths for login / logout / access denied (optional – these are defaults)
+    options.LoginPath = "/Identity/Account/Login";
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+
+    // Make the cookie HTTP-only for security
+    options.Cookie.HttpOnly = true;
+    // Name it something unique if you host multiple apps
+    options.Cookie.Name = "QuestionBank.Auth";
+});
 
 // Application services
 builder.Services.AddScoped<INotificationService, NotificationService>();
@@ -66,7 +91,10 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
+
+// Authentication must come before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
