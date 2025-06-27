@@ -70,10 +70,29 @@ namespace QuestionBank.Areas.Identity.Pages.Account
             public string ConfirmPassword { get; set; }
         }
 
-        public async Task OnGetAsync(string returnUrl = null)
+        // after:
+        public async Task OnGetAsync(
+            string returnUrl = null,
+            string loginUserID = null,   // ← new
+            string password = null)      // ← new
         {
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+            // seed the form if query-string provided
+            Input = new InputModel
+            {
+                UserName = string.IsNullOrWhiteSpace(loginUserID)
+                                  ? null
+                                  : loginUserID,
+                Password = string.IsNullOrWhiteSpace(password)
+                                  ? null
+                                  : password,
+                ConfirmPassword = string.IsNullOrWhiteSpace(password)
+                                  ? null
+                                  : password
+                // leave Email alone (optional)
+            };
         }
 
         // Razor-Pages handler for /Register?handler=VerifyUsername&userName=...

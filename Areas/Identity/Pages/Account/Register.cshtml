@@ -36,6 +36,7 @@
                         <div class="form-floating mb-3">
                             <input asp-for="Input.Password"
                                    type="password"
+                                   value="@Model.Input.Password"
                                    class="form-control"
                                    placeholder="Password"
                                    autocomplete="new-password" />
@@ -46,6 +47,7 @@
                         <div class="form-floating mb-3">
                             <input asp-for="Input.ConfirmPassword"
                                    type="password"
+                                   value="@Model.Input.ConfirmPassword"
                                    class="form-control"
                                    placeholder="Confirm Password"
                                    autocomplete="new-password" />
@@ -89,65 +91,90 @@
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+  <partial name="_ValidationScriptsPartial" />
 
-    <script>
-        const verifyUrl = {
-          user:  '@Url.Page("/Account/Register", "VerifyUsername", new { area = "Identity" })',
-          email: '@Url.Page("/Account/Register", "VerifyEmail", new { area = "Identity" })'
-        };
+  <script>
+    const verifyUrl = {
+      user:  '@Url.Page("/Account/Register", "VerifyUsername", new { area = "Identity" })',
+      email: '@Url.Page("/Account/Register", "VerifyEmail", new { area = "Identity" })'
+    };
 
-        function handleValidation($field, serverOk, serverMsg) {
-          const $fb = $field.closest('.form-floating').find('.invalid-feedback');
-          const clientOk = $field.valid();
-          const finalValid = serverOk && clientOk;
+    function handleValidation($field, serverOk, serverMsg) {
+      const $fb = $field.closest('.form-floating').find('.invalid-feedback');
+      const clientOk = $field.valid();
+      const isValid = clientOk && serverOk;
 
-          $field.toggleClass('is-invalid', !finalValid)
-                .toggleClass('is-valid', finalValid);
+      $field.toggleClass('is-invalid', !isValid)
+            .toggleClass('is-valid', isValid);
 
-          if (!finalValid) {
-            // If the client validator failed, let its message stay; otherwise use serverMsg
-            const msg = clientOk ? serverMsg : $fb.text();
-            $fb.text(msg).addClass('d-block');
-          } else {
-            $fb.text('').removeClass('d-block');
-          }
+      if (!isValid) {
+        const msg = clientOk ? serverMsg : $fb.text();
+        $fb.text(msg).addClass('d-block');
+      } else {
+        $fb.text('').removeClass('d-block');
+      }
+    }
+
+    function triggerAjaxValidation(selector, url, paramName, errorMsg) {
+      const $f = $(selector);
+      const val = $f.val().trim();
+      if (!val) {
+        handleValidation($f, true, '');
+        return;
+      }
+      $.get(url, { [paramName]: val })
+       .done(ok => handleValidation($f, ok, errorMsg));
+    }
+
+    function validatePasswordStrength() {
+      const $f = $('#Input_Password');
+      const val = $f.val();
+      const strong = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@@$!%*?&#]).{8,}$");
+      const ok = strong.test(val);
+      handleValidation($f, ok, 'Password must include upper, lower, number and special.');
+    }
+
+    function validatePasswordMatch() {
+      const $f = $('#Input_ConfirmPassword');
+      const match = $f.val() === $('#Input_Password').val();
+      handleValidation($f, match, 'Passwords do not match.');
+    }
+
+    $(function () {
+      // Trigger validation on blur
+      $('#Input_UserName').on('blur', () =>
+        triggerAjaxValidation('#Input_UserName', verifyUrl.user, 'userName', 'Username is already taken.')
+      );
+
+      $('#Input_Email').on('blur', () =>
+        triggerAjaxValidation('#Input_Email', verifyUrl.email, 'email', 'Email is already in use.')
+      );
+
+      $('#Input_Password').on('blur', validatePasswordStrength);
+      $('#Input_ConfirmPassword').on('blur', validatePasswordMatch);
+
+      // Initial pre-filled values (e.g., from query string)
+      ['#Input_UserName', '#Input_Email', '#Input_Password', '#Input_ConfirmPassword'].forEach(id => {
+        if ($(id).val().trim()) {
+          $(id).trigger('blur');
         }
+      });
 
-        // Username
-        $('#Input_UserName').on('blur', function() {
-          const $f = $(this), val = $f.val().trim();
-          if (!val) { handleValidation($f, true, ''); return; }
-          $.get(verifyUrl.user, { userName: val })
-           .done(ok => handleValidation($f, ok, 'Username is already taken.'));
-        });
+      // On form submit: trigger all validations and prevent submission if invalid
+      $('#registerForm').on('submit', function (e) {
+        e.preventDefault();
 
-        // Email
-        $('#Input_Email').on('blur', function() {
-          const $f = $(this), val = $f.val().trim();
-          if (!val) { handleValidation($f, true, ''); return; }
-          $.get(verifyUrl.email, { email: val })
-           .done(ok => handleValidation($f, ok, 'Email is already in use.'));
-        });
+        $('#Input_UserName').trigger('blur');
+        $('#Input_Email').trigger('blur');
+        $('#Input_Password').trigger('blur');
+        $('#Input_ConfirmPassword').trigger('blur');
 
-        // Password
-        $('#Input_Password').on('blur', function() {
-          const $f = $(this);
-          // no server check, so serverOk = true
-          handleValidation($f, true, '');
-        });
-
-        // Confirm Password
-        $('#Input_ConfirmPassword').on('blur', function() {
-          const $f = $(this);
-          handleValidation($f, true, '');
-        });
-
-        // On form submit, re-validate all inputs to clear stale ticks
-        $('#registerForm').on('submit', function() {
-          $(this).find('input').each(function() {
-            $(this).valid();
-          });
-        });
-    </script>
+        setTimeout(() => {
+          if ($(this).find('.is-invalid').length === 0) {
+            $(this).off('submit').submit();
+          }
+        }, 150);
+      });
+    });
+  </script>
 }
