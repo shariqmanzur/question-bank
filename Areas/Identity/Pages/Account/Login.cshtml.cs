@@ -58,7 +58,10 @@ namespace QuestionBank.Areas.Identity.Pages.Account
         /// <summary>
         /// Renders the login form. Propagates any TempData error into the EmailOrUsername field.
         /// </summary>
-        public async Task OnGetAsync(string returnUrl = null)
+        public async Task OnGetAsync(
+            string returnUrl = null,
+            string loginUserID = null,      // ← new
+            string password = null)         // ← new
         {
             if (!string.IsNullOrEmpty(ErrorMessage))
             {
@@ -68,6 +71,17 @@ namespace QuestionBank.Areas.Identity.Pages.Account
             }
 
             returnUrl ??= Url.Content("~/");
+
+            // if they passed creds in the query string, seed the form
+            Input = new InputModel
+            {
+                EmailOrUsername = string.IsNullOrWhiteSpace(loginUserID)
+                                  ? null
+                                  : loginUserID,
+                Password = string.IsNullOrWhiteSpace(password)
+                           ? null
+                           : password
+            };
 
             // clear any existing external cookie
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);

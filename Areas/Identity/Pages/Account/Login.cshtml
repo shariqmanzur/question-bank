@@ -27,6 +27,7 @@
                         <div class="form-floating mb-3">
                             <input asp-for="Input.Password"
                                    type="password"
+                                   value="@Model.Input.Password"
                                    class="form-control @(Model.IsPasswordInvalid ? "is-invalid" : "")"
                                    placeholder="Password"
                                    autocomplete="current-password" />
